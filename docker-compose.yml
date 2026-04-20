@@ -8,7 +8,9 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./tmp/postgres_data:/var/lib/postgresql/data
+      - ./db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/init/02_register_initial_migration.sql:/docker-entrypoint-initdb.d/02_register_initial_migration.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d istu_dwa_lb_2"]
       interval: 5s
@@ -26,12 +28,8 @@ services:
       CHOKIDAR_USEPOLLING: "true"
     volumes:
       - .:/app
-      - api_node_modules:/app/node_modules
+      - ./tmp/api_node_modules:/app/node_modules
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "npm run db:migrate && npm run dev"
-
-volumes:
-  postgres_data:
-  api_node_modules:
+    command: npm run dev
