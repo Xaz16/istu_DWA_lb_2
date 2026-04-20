@@ -24,12 +24,8 @@ function signAccessToken(user) {
   return jwt.sign(payload, getJwtSecret(), { expiresIn: getExpiresIn() });
 }
 
-function verifyBearerToken(authorizationHeader) {
-  if (!authorizationHeader || typeof authorizationHeader !== 'string') {
-    return null;
-  }
-  const [scheme, token] = authorizationHeader.split(/\s+/);
-  if (!token || scheme.toLowerCase() !== 'bearer') {
+function verifyAccessToken(token) {
+  if (!token || typeof token !== 'string') {
     return null;
   }
   try {
@@ -39,4 +35,30 @@ function verifyBearerToken(authorizationHeader) {
   }
 }
 
-module.exports = { signAccessToken, verifyBearerToken, getJwtSecret, getExpiresIn };
+function verifyBearerToken(authorizationHeader) {
+  if (!authorizationHeader || typeof authorizationHeader !== 'string') {
+    return null;
+  }
+  const [scheme, token] = authorizationHeader.split(/\s+/);
+  if (!token || scheme.toLowerCase() !== 'bearer') {
+    return null;
+  }
+  return verifyAccessToken(token);
+}
+
+function cookieMaxAgeMsFromToken(token) {
+  const decoded = jwt.decode(token);
+  if (!decoded || !decoded.exp) {
+    return 24 * 60 * 60 * 1000;
+  }
+  return Math.max(decoded.exp * 1000 - Date.now(), 0);
+}
+
+module.exports = {
+  signAccessToken,
+  verifyAccessToken,
+  verifyBearerToken,
+  getJwtSecret,
+  getExpiresIn,
+  cookieMaxAgeMsFromToken,
+};

@@ -4,7 +4,8 @@ const { body } = require('express-validator');
 const { pool } = require('../db/pool');
 const { sendValidationErrors } = require('../middleware/validate');
 const { requireAuth } = require('../middleware/requireAuth');
-const { signAccessToken, getExpiresIn } = require('../lib/jwt');
+const { signAccessToken, getExpiresIn, cookieMaxAgeMsFromToken } = require('../lib/jwt');
+const { ACCESS_TOKEN_COOKIE } = require('../constants/authCookies');
 
 const router = express.Router();
 
@@ -34,6 +35,15 @@ router.post(
         role: user.role,
       });
 
+      const maxAge = cookieMaxAgeMsFromToken(token);
+      res.cookie(ACCESS_TOKEN_COOKIE, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge,
+        secure: process.env.NODE_ENV === 'production',
+      });
+
       res.json({
         access_token: token,
         token_type: 'Bearer',
@@ -51,6 +61,11 @@ router.get('/auth/me', requireAuth, (req, res) => {
     login: req.auth.login,
     role: req.auth.role,
   });
+});
+
+router.post('/auth/logout', (req, res) => {
+  res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/', sameSite: 'lax' });
+  res.json({ ok: true });
 });
 
 module.exports = router;

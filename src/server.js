@@ -1,14 +1,23 @@
 require('dotenv').config();
 
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const menuRouter = require('./routes/menu');
 const bookingsRouter = require('./routes/bookings');
 const authRouter = require('./routes/auth');
+const adminRouter = require('./routes/admin');
 
 const app = express();
 
-app.use(cors());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -16,6 +25,8 @@ app.get('/', (req, res) => {
     name: 'istu_dwa_lb_2',
     api: '/api',
     health: '/health',
+    adminLogin: '/login.html',
+    adminPanel: '/admin.html',
   });
 });
 
@@ -26,6 +37,9 @@ app.get('/health', (req, res) => {
 app.use('/api', authRouter);
 app.use('/api', menuRouter);
 app.use('/api', bookingsRouter);
+app.use('/api', adminRouter);
+
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });

@@ -1,7 +1,11 @@
-const { verifyBearerToken } = require('../lib/jwt');
+const { verifyBearerToken, verifyAccessToken } = require('../lib/jwt');
+const { ACCESS_TOKEN_COOKIE } = require('../constants/authCookies');
 
 function requireAuth(req, res, next) {
-  const payload = verifyBearerToken(req.headers.authorization);
+  let payload = verifyBearerToken(req.headers.authorization);
+  if (!payload && req.cookies && req.cookies[ACCESS_TOKEN_COOKIE]) {
+    payload = verifyAccessToken(req.cookies[ACCESS_TOKEN_COOKIE]);
+  }
   if (!payload) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

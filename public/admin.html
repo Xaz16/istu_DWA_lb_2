@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Панель администратора</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f1419;
+        --panel: #1a2332;
+        --text: #e8eef7;
+        --muted: #9aa8bc;
+        --accent: #5b9fd8;
+        --border: #2a3648;
+        --zebra: rgba(255, 255, 255, 0.03);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f4f6fa;
+          --panel: #fff;
+          --text: #1a2332;
+          --muted: #5c6b82;
+          --accent: #1a6fb5;
+          --border: #d8dee9;
+          --zebra: rgba(0, 0, 0, 0.03);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+      }
+      header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--panel);
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 650;
+      }
+      .who {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      a.btn,
+      button.btn {
+        display: inline-block;
+        padding: 0.45rem 0.85rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: transparent;
+        color: #fff;
+        font-weight: 600;
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 2.5rem;
+      }
+      section {
+        margin-bottom: 2.25rem;
+      }
+      h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1.05rem;
+        font-weight: 650;
+      }
+      .hint {
+        margin: 0 0 0.75rem;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .table-wrap {
+        overflow: auto;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+      }
+      th,
+      td {
+        padding: 0.55rem 0.65rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        font-weight: 600;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      tr:nth-child(even) td {
+        background: var(--zebra);
+      }
+      .empty {
+        padding: 1rem;
+        color: var(--muted);
+      }
+      .banner {
+        display: none;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--accent) 12%, transparent);
+      }
+      .banner.show {
+        display: block;
+      }
+      .pre {
+        white-space: pre-line;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Панель администратора</h1>
+        <div id="who" class="who"></div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="/login.html">Страница входа</a>
+        <button type="button" class="btn primary" id="logout">Выйти</button>
+      </div>
+    </header>
+    <main>
+      <div id="banner" class="banner" role="status"></div>
+      <section>
+        <h2>Бронирования столиков</h2>
+        <p class="hint">Записи, оставленные гостями при бронировании.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Зал</th>
+                <th>Стол</th>
+                <th>Гости</th>
+                <th>Контакты</th>
+                <th>Создано</th>
+              </tr>
+            </thead>
+            <tbody id="bookings-body"></tbody>
+          </table>
+          <div id="bookings-empty" class="empty" style="display: none">Нет бронирований.</div>
+        </div>
+      </section>
+      <section>
+        <h2>Отзывы к блюдам</h2>
+        <p class="hint">Отзывы пользователей с привязкой к блюду.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Блюдо</th>
+                <th>Автор</th>
+                <th>Текст</th>
+                <th>Фото</th>
+                <th>Создано</th>
+              </tr>
+            </thead>
+            <tbody id="reviews-body"></tbody>
+          </table>
+          <div id="reviews-empty" class="empty" style="display: none">Нет отзывов.</div>
+        </div>
+      </section>
+    </main>
+    <script>
+      (function () {
+        const who = document.getElementById('who');
+        const banner = document.getElementById('banner');
+        const bookingsBody = document.getElementById('bookings-body');
+        const reviewsBody = document.getElementById('reviews-body');
+        const bookingsEmpty = document.getElementById('bookings-empty');
+        const reviewsEmpty = document.getElementById('reviews-empty');
+
+        function showBanner(msg) {
+          banner.textContent = msg;
+          banner.classList.add('show');
+        }
+
+        function td(text) {
+          const el = document.createElement('td');
+          el.textContent = text == null ? '' : String(text);
+          return el;
+        }
+
+        function tdLink(href, label) {
+          const cell = document.createElement('td');
+          if (!href) {
+            cell.textContent = '—';
+            return cell;
+          }
+          const a = document.createElement('a');
+          a.href = href;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = label || href;
+          cell.appendChild(a);
+          return cell;
+        }
+
+        async function api(path, options) {
+          return fetch(path, Object.assign({ credentials: 'include' }, options || {}));
+        }
+
+        document.getElementById('logout').addEventListener('click', async function () {
+          await api('/api/auth/logout', { method: 'POST' });
+          window.location.href = '/login.html';
+        });
+
+        async function init() {
+          const meRes = await api('/api/auth/me');
+          if (meRes.status === 401) {
+            window.location.href = '/login.html';
+            return;
+          }
+          if (!meRes.ok) {
+            showBanner('Не удалось проверить сессию.');
+            return;
+          }
+          const me = await meRes.json();
+          who.textContent = 'Вы вошли как ' + me.login + ' (' + me.role + ').';
+
+          if (me.role !== 'admin') {
+            showBanner('Недостаточно прав (нужна роль admin).');
+            return;
+          }
+
+          const [bRes, rRes] = await Promise.all([
+            api('/api/admin/bookings?limit=100'),
+            api('/api/admin/reviews?limit=100'),
+          ]);
+
+          if (bRes.status === 401 || rRes.status === 401) {
+            window.location.href = '/login.html';
+            return;
+          }
+          if (bRes.status === 403 || rRes.status === 403) {
+            showBanner('Доступ к данным панели запрещён (нужна роль admin).');
+            return;
+          }
+          if (!bRes.ok || !rRes.ok) {
+            showBanner('Не удалось загрузить данные для панели.');
+            return;
+          }
+
+          const bookings = await bRes.json();
+          const reviews = await rRes.json();
+
+          bookingsBody.innerHTML = '';
+          if (!bookings.length) {
+            bookingsEmpty.style.display = 'block';
+          } else {
+            bookingsEmpty.style.display = 'none';
+            bookings.forEach(function (row) {
+              const tr = document.createElement('tr');
+              tr.appendChild(td(row.visitDate));
+              tr.appendChild(td(row.hallName));
+              tr.appendChild(td(row.tableCode));
+              tr.appendChild(td(row.guestCount));
+              const contact =
+                row.contactName +
+                '\n' +
+                row.contactPhone +
+                (row.contactEmail ? '\n' + row.contactEmail : '');
+              const contactCell = td(contact);
+              contactCell.className = 'pre';
+              tr.appendChild(contactCell);
+              tr.appendChild(td(row.createdAt));
+              bookingsBody.appendChild(tr);
+            });
+          }
+
+          reviewsBody.innerHTML = '';
+          if (!reviews.length) {
+            reviewsEmpty.style.display = 'block';
+          } else {
+            reviewsEmpty.style.display = 'none';
+            reviews.forEach(function (row) {
+              const tr = document.createElement('tr');
+              tr.appendChild(td(row.dishName));
+              tr.appendChild(td(row.authorName));
+              tr.appendChild(td(row.body));
+              tr.appendChild(tdLink(row.photoUrl, 'ссылка'));
+              tr.appendChild(td(row.createdAt));
+              reviewsBody.appendChild(tr);
+            });
+          }
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>
