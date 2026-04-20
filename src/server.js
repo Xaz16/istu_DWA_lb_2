@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const menuRouter = require('./routes/menu');
 const bookingsRouter = require('./routes/bookings');
+const authRouter = require('./routes/auth');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+app.use('/api', authRouter);
 app.use('/api', menuRouter);
 app.use('/api', bookingsRouter);
 
