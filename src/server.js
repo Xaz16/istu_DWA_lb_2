@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const menuRouter = require('./routes/menu');
+const bookingsRouter = require('./routes/bookings');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api', menuRouter);
+app.use('/api', bookingsRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
