@@ -1,0 +1,508 @@
+openapi: 3.0.3
+info:
+  title: Restaurant API (istu_dwa_lb_2)
+  version: 1.0.0
+  description: |
+    REST API веб-приложения ресторана: меню и блюда, залы и бронирования, JWT-аутентификация, админские выборки.
+
+    Защищённые маршруты: заголовок `Authorization: Bearer` и JWT, либо cookie `access_token`
+    (ставится при успешном `POST /api/auth/login` с `credentials: 'include'` в браузере).
+servers:
+  - url: /
+tags:
+  - name: Meta
+  - name: Menu
+  - name: Bookings
+  - name: Auth
+  - name: Admin
+paths:
+  /:
+    get:
+      tags: [Meta]
+      summary: Краткая информация о сервисе
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /health:
+    get:
+      tags: [Meta]
+      summary: Проверка живости процесса
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+  /api/sections:
+    get:
+      tags: [Menu]
+      summary: Список разделов меню
+      responses:
+        "200":
+          description: Массив разделов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuSection"
+  /api/dishes:
+    get:
+      tags: [Menu]
+      summary: Список блюд с фильтрацией на сервере
+      parameters:
+        - in: query
+          name: sectionId
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: minWeight
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: maxWeight
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: minCalories
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: maxCalories
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: hasAllergens
+          schema: { type: string, enum: ["true", "false"] }
+        - in: query
+          name: isSpicy
+          schema: { type: string, enum: ["true", "false"] }
+        - in: query
+          name: kidFriendly
+          schema: { type: string, enum: ["true", "false"] }
+        - in: query
+          name: q
+          description: Подстрока в названии блюда (без регистра)
+          schema: { type: string, minLength: 1, maxLength: 200 }
+      responses:
+        "200":
+          description: Массив блюд
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DishListItem"
+        "400":
+          description: Ошибка валидации параметров
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrors"
+  /api/dishes/{id}:
+    get:
+      tags: [Menu]
+      summary: Детали блюда (состав и отзывы)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Блюдо с ингредиентами и отзывами
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DishDetail"
+        "400":
+          description: Некорректный id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrors"
+        "404":
+          description: Блюдо не найдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /api/halls:
+    get:
+      tags: [Bookings]
+      summary: Список залов
+      responses:
+        "200":
+          description: Массив залов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hall"
+  /api/halls/{hallId}/tables:
+    get:
+      tags: [Bookings]
+      summary: Столики зала и занятость на дату
+      parameters:
+        - in: path
+          name: hallId
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: visitDate
+          required: true
+          description: Дата визита (UTC), не в прошлом, формат YYYY-MM-DD
+          schema: { type: string, format: date, example: "2026-04-21" }
+      responses:
+        "200":
+          description: Столики с признаком booked
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HallTableRow"
+        "400":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrors"
+        "404":
+          description: Зал не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /api/bookings:
+    post:
+      tags: [Bookings]
+      summary: Создать бронирование столика
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingCreate"
+      responses:
+        "201":
+          description: Создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingCreated"
+        "400":
+          description: Валидация или guestCount больше вместимости стола
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ValidationErrors"
+                  - $ref: "#/components/schemas/ErrorMessage"
+                  - type: object
+                    properties:
+                      error: { type: string }
+                      seatCount: { type: integer }
+        "404":
+          description: Столик не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "409":
+          description: Стол уже занят на эту дату
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход (JWT + httpOnly cookie access_token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: { type: string, maxLength: 128 }
+                password: { type: string }
+      responses:
+        "200":
+          description: Успех; в ответе также Set-Cookie access_token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrors"
+        "401":
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Текущий пользователь по JWT
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Нет или невалидный токен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выход (сброс cookie access_token)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+  /api/admin/bookings:
+    get:
+      tags: [Admin]
+      summary: Список бронирований (только admin)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminBookingRow"
+        "400":
+          description: Ошибка валидации limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrors"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "403":
+          description: Не роль admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /api/admin/reviews:
+    get:
+      tags: [Admin]
+      summary: Список отзывов к блюдам (только admin)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminReviewRow"
+        "400":
+          description: Ошибка валидации limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrors"
+        "401":
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "403":
+          description: Не роль admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+  schemas:
+    ErrorMessage:
+      type: object
+      properties:
+        error:
+          type: string
+    ValidationErrors:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    MenuSection:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        sortOrder: { type: integer }
+    DishListItem:
+      type: object
+      properties:
+        id: { type: integer }
+        sectionId: { type: integer }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        imageUrl: { type: string, nullable: true }
+        weightG: { type: integer, nullable: true }
+        calories: { type: integer, nullable: true }
+        hasAllergens: { type: boolean }
+        isSpicy: { type: boolean }
+        kidFriendly: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    DishIngredient:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        sortOrder: { type: integer }
+    DishReview:
+      type: object
+      properties:
+        id: { type: integer }
+        authorName: { type: string }
+        body: { type: string }
+        photoUrl: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    DishDetail:
+      allOf:
+        - $ref: "#/components/schemas/DishListItem"
+        - type: object
+          properties:
+            sectionName: { type: string }
+            ingredients:
+              type: array
+              items:
+                $ref: "#/components/schemas/DishIngredient"
+            reviews:
+              type: array
+              items:
+                $ref: "#/components/schemas/DishReview"
+    Hall:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        sortOrder: { type: integer }
+    HallTableRow:
+      type: object
+      properties:
+        id: { type: integer }
+        hallId: { type: integer }
+        code: { type: string }
+        posX: { type: number }
+        posY: { type: number }
+        seatCount: { type: integer }
+        booked: { type: boolean }
+    BookingCreate:
+      type: object
+      required: [tableId, visitDate, guestCount, contactName, contactPhone]
+      properties:
+        tableId: { type: integer, minimum: 1 }
+        visitDate: { type: string, format: date, example: "2026-04-21" }
+        guestCount: { type: integer, minimum: 1 }
+        contactName: { type: string, maxLength: 255 }
+        contactPhone: { type: string, minLength: 5, maxLength: 64 }
+        contactEmail: { type: string, format: email, nullable: true }
+    BookingCreated:
+      type: object
+      properties:
+        id: { type: integer }
+        tableId: { type: integer }
+        visitDate: { type: string, format: date }
+        guestCount: { type: integer }
+        contactName: { type: string }
+        contactPhone: { type: string }
+        contactEmail: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    LoginResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, example: Bearer }
+        expires_in: { type: string, example: 24h }
+    AuthUser:
+      type: object
+      properties:
+        id: { type: integer }
+        login: { type: string }
+        role: { type: string }
+    AdminBookingRow:
+      type: object
+      properties:
+        id: { type: integer }
+        visitDate: { type: string, format: date }
+        guestCount: { type: integer }
+        contactName: { type: string }
+        contactPhone: { type: string }
+        contactEmail: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        tableCode: { type: string }
+        hallName: { type: string }
+    AdminReviewRow:
+      type: object
+      properties:
+        id: { type: integer }
+        authorName: { type: string }
+        body: { type: string }
+        photoUrl: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        dishId: { type: integer }
+        dishName: { type: string }

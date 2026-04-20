@@ -3,11 +3,18 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const yaml = require('js-yaml');
 const cookieParser = require('cookie-parser');
+const swaggerUi = require('swagger-ui-express');
 const menuRouter = require('./routes/menu');
 const bookingsRouter = require('./routes/bookings');
 const authRouter = require('./routes/auth');
 const adminRouter = require('./routes/admin');
+
+const openApiSpec = yaml.load(
+  fs.readFileSync(path.join(__dirname, 'docs', 'openapi.yaml'), 'utf8')
+);
 
 const app = express();
 
@@ -27,6 +34,7 @@ app.get('/', (req, res) => {
     health: '/health',
     adminLogin: '/login.html',
     adminPanel: '/admin.html',
+    apiDocs: '/api-docs',
   });
 });
 
@@ -38,6 +46,8 @@ app.use('/api', authRouter);
 app.use('/api', menuRouter);
 app.use('/api', bookingsRouter);
 app.use('/api', adminRouter);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
