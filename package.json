@@ -2,23 +2,30 @@
   "name": "istu_dwa_lb_2",
   "version": "1.0.0",
   "description": "",
-  "main": "src/server.js",
+  "type": "module",
+  "main": "dist/src/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "db:migrate": "node db/migrate.js",
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "postinstall": "prisma generate",
+    "build": "tsc",
+    "db:migrate": "tsx db/migrate.ts",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/src/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "nodemonConfig": {
     "watch": [
-      "src"
+      "src",
+      "prisma",
+      "db"
     ],
-    "ext": "js,json,yaml"
+    "ext": "ts,js,json,yaml,prisma"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -31,6 +38,17 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.10.1",
+    "@types/swagger-ui-express": "^4.1.8",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.7.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

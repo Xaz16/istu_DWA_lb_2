@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MenuSection {
+  id        Int    @id @default(autoincrement())
+  name      String @db.VarChar(255)
+  sortOrder Int    @default(0) @map("sort_order")
+  dishes    Dish[]
+
+  @@map("menu_sections")
+}
+
+model Dish {
+  id           Int              @id @default(autoincrement())
+  sectionId    Int              @map("section_id")
+  menuSection  MenuSection      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  name         String           @db.VarChar(255)
+  description  String?
+  imageUrl     String?          @map("image_url")
+  weightG      Int?             @map("weight_g")
+  calories     Int?
+  hasAllergens Boolean          @default(false) @map("has_allergens")
+  isSpicy      Boolean          @default(false) @map("is_spicy")
+  kidFriendly  Boolean          @default(true) @map("kid_friendly")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  ingredients  DishIngredient[]
+  reviews      Review[]
+
+  @@index([sectionId])
+  @@index([calories])
+  @@index([weightG])
+  @@map("dishes")
+}
+
+model DishIngredient {
+  id        Int    @id @default(autoincrement())
+  dishId    Int    @map("dish_id")
+  dish      Dish   @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  name      String @db.VarChar(255)
+  sortOrder Int    @default(0) @map("sort_order")
+
+  @@index([dishId])
+  @@map("dish_ingredients")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  dishId     Int      @map("dish_id")
+  dish       Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  authorName String   @map("author_name") @db.VarChar(255)
+  body       String
+  photoUrl   String?  @map("photo_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([dishId])
+  @@map("reviews")
+}
+
+model Hall {
+  id        Int         @id @default(autoincrement())
+  name      String      @db.VarChar(255)
+  sortOrder Int         @default(0) @map("sort_order")
+  tables    HallTable[]
+
+  @@map("halls")
+}
+
+model HallTable {
+  id        Int       @id @default(autoincrement())
+  hallId    Int       @map("hall_id")
+  hall      Hall      @relation(fields: [hallId], references: [id], onDelete: Cascade)
+  code      String    @db.VarChar(32)
+  posX      Float     @default(0) @map("pos_x")
+  posY      Float     @default(0) @map("pos_y")
+  seatCount Int       @default(2) @map("seat_count")
+  bookings  Booking[]
+
+  @@unique([hallId, code])
+  @@index([hallId])
+  @@map("hall_tables")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  login        String   @unique @db.VarChar(128)
+  passwordHash String   @map("password_hash")
+  role         String   @default("admin") @db.VarChar(32)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Booking {
+  id           Int       @id @default(autoincrement())
+  tableId      Int       @map("table_id")
+  table        HallTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  visitDate    DateTime  @map("visit_date") @db.Date
+  guestCount   Int       @map("guest_count")
+  contactName  String    @map("contact_name") @db.VarChar(255)
+  contactPhone String    @map("contact_phone") @db.VarChar(64)
+  contactEmail String?   @map("contact_email") @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@unique([tableId, visitDate])
+  @@index([visitDate])
+  @@index([tableId])
+  @@map("bookings")
+}

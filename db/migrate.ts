@@ -1,11 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const { Client } = require('pg');
-require('dotenv').config();
+import fs from 'fs';
+import path from 'path';
+import { Client } from 'pg';
+import dotenv from 'dotenv';
 
-const migrationsDir = path.join(__dirname, 'migrations');
+dotenv.config();
 
-async function main() {
+const migrationsDir = path.join(process.cwd(), 'db', 'migrations');
+
+async function main(): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) {
     console.error('DATABASE_URL is not set. Copy .env.example to .env and configure.');
@@ -30,11 +32,10 @@ async function main() {
       .sort();
 
     for (const file of files) {
-      const applied = await client.query(
-        'SELECT 1 FROM schema_migrations WHERE filename = $1',
-        [file]
-      );
-      if (applied.rowCount > 0) {
+      const applied = await client.query('SELECT 1 FROM schema_migrations WHERE filename = $1', [
+        file,
+      ]);
+      if (applied.rowCount && applied.rowCount > 0) {
         console.log('skip', file);
         continue;
       }
@@ -56,7 +57,7 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err);
   process.exit(1);
 });
