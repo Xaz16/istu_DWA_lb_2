@@ -37,4 +37,10 @@ export class MenuController {
   createReview(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateReviewDto) {
     return this.menu.createReview(id, dto);
   }
+
+  @Post('dishes/:id/reviews/:reviewId/like')
+  @HttpCode(HttpStatus.CREATED)
+  createLike(@Param('id', ParseIntPipe) id: number, @Param('reviewId', ParseIntPipe) reviewID: number) {
+    return this.menu.createLike(reviewID);
+  }
 }

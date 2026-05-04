@@ -19,6 +19,9 @@ export class Review {
   @Column({ type: 'text' })
   body!: string;
 
+  @Column({type: 'int', default: 0})
+  likes: number
+
   @Column({ name: 'photo_url', type: 'text', nullable: true })
   photoUrl!: string | null;
 

@@ -174,4 +174,26 @@ export class MenuService {
       createdAt: saved.createdAt,
     };
   }
+
+  async createLike(reviewID: number) {
+    const review = await this.reviewRepo.findOne({
+      where: {
+        id: reviewID
+      }
+    });
+
+    if(!review) {
+      throw new Error(`Can't find review ${reviewID}`);
+    }
+
+    await this.reviewRepo.update(reviewID, {
+      likes: review.likes + 1
+    });
+
+    return this.reviewRepo.findOne({
+      where: {
+        id: reviewID
+      }
+    });
+  }
 }

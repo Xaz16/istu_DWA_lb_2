@@ -37,7 +37,7 @@ import { PagesModule } from './pages/pages.module';
           expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '24h') as JwtSignOptions['expiresIn'],
         };
         return {
-          secret: secret ?? 'dev-insecure-change-me',
+          secret: secret ?? '123123',
           signOptions,
         };
       },
