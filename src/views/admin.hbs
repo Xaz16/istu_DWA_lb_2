@@ -26,11 +26,12 @@
                 <th>Контакт</th>
                 <th>Стол / зал</th>
                 <th>Создано</th>
+                <th></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="bookings-tbody">
               {{#each bookings}}
-                <tr>
+                <tr data-booking-row="{{this.id}}">
                   <td>{{this.id}}</td>
                   <td>{{this.visitDate}}</td>
                   <td>{{this.guestCount}}</td>
@@ -41,6 +42,9 @@
                   </td>
                   <td>{{this.tableCode}} — {{this.hallName}}</td>
                   <td>{{this.createdAtDisplay}}</td>
+                  <td>
+                    <button type="button" class="js-delete-booking" data-booking-id="{{this.id}}">Удалить</button>
+                  </td>
                 </tr>
               {{/each}}
             </tbody>
@@ -61,16 +65,20 @@
                 <th>Автор</th>
                 <th>Текст</th>
                 <th>Создано</th>
+                <th></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="reviews-tbody">
               {{#each reviews}}
-                <tr>
+                <tr data-review-row="{{this.id}}">
                   <td>{{this.id}}</td>
                   <td>{{this.dishName}} <span class="text-muted">(#{{this.dishId}})</span></td>
                   <td>{{this.authorName}}</td>
                   <td class="review-body">{{this.body}}</td>
                   <td>{{this.createdAtDisplay}}</td>
+                  <td>
+                    <button type="button" class="js-delete-review" data-review-id="{{this.id}}">Удалить</button>
+                  </td>
                 </tr>
               {{/each}}
             </tbody>
@@ -80,5 +88,61 @@
         {{/if}}
       </div>
     </div>
+    <script>
+      (function () {
+        var ADMIN_ACCESS_TOKEN = {{{accessTokenJson}}};
+
+        function apiFetch(path, options) {
+          if (typeof ADMIN_ACCESS_TOKEN !== 'string' || !ADMIN_ACCESS_TOKEN) {
+            window.location.href = '/login';
+            return Promise.reject(new Error('no token'));
+          }
+          var headers = Object.assign({}, (options && options.headers) || {}, {
+            Authorization: 'Bearer ' + ADMIN_ACCESS_TOKEN,
+          });
+          return fetch('/api' + path, Object.assign({}, options || {}, { headers: headers })).then(function (res) {
+            if (res.status === 401) {
+              window.location.href = '/login';
+              throw new Error('unauthorized');
+            }
+            return res;
+          });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          document.querySelectorAll('.js-delete-booking').forEach(function (button) {
+            button.addEventListener('click', function () {
+              var id = button.getAttribute('data-booking-id');
+              if (!id || !confirm('Удалить бронирование #' + id + '?')) return;
+              apiFetch('/admin/bookings/' + id, { method: 'DELETE' })
+                .then(function (res) {
+                  if (!res.ok) throw new Error('delete failed');
+                  var row = document.querySelector('[data-booking-row="' + id + '"]');
+                  if (row) row.remove();
+                })
+                .catch(function () {
+                  alert('Не удалось удалить бронирование.');
+                });
+            });
+          });
+
+          document.querySelectorAll('.js-delete-review').forEach(function (button) {
+            button.addEventListener('click', function () {
+              var id = button.getAttribute('data-review-id');
+              if (!id || !confirm('Удалить отзыв #' + id + '?')) return;
+              apiFetch('/admin/reviews/' + id, { method: 'DELETE' })
+                .then(function (res) {
+                  if (!res.ok) throw new Error('delete failed');
+                  var row = document.querySelector('[data-review-row="' + id + '"]');
+                  if (row) row.remove();
+                })
+                .catch(function () {
+                  alert('Не удалось удалить отзыв.');
+                });
+            });
+          });
+        });
+      })();
+    </script>
   </body>
 </html>

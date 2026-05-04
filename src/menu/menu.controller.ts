@@ -1,4 +1,15 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { CreateReviewDto } from './dto/create-review.dto';
 import { ListDishesQueryDto } from './dto/list-dishes-query.dto';
 import { MenuService } from './menu.service';
 
@@ -19,5 +30,11 @@ export class MenuController {
   @Get('dishes/:id')
   getDishById(@Param('id', ParseIntPipe) id: number) {
     return this.menu.findDishById(id);
+  }
+
+  @Post('dishes/:id/reviews')
+  @HttpCode(HttpStatus.CREATED)
+  createReview(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateReviewDto) {
+    return this.menu.createReview(id, dto);
   }
 }

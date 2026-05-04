@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Dish } from '../database/entities/dish.entity';
 import { MenuSection } from '../database/entities/menu-section.entity';
+import { Review } from '../database/entities/review.entity';
+import type { CreateReviewDto } from './dto/create-review.dto';
 import type { ListDishesQueryDto } from './dto/list-dishes-query.dto';
 
 function mapDishList(dish: Dish) {
@@ -28,6 +30,8 @@ export class MenuService {
     private readonly sectionRepo: Repository<MenuSection>,
     @InjectRepository(Dish)
     private readonly dishRepo: Repository<Dish>,
+    @InjectRepository(Review)
+    private readonly reviewRepo: Repository<Review>,
   ) {}
 
   listSections() {
@@ -132,6 +136,42 @@ export class MenuService {
         photoUrl: review.photoUrl,
         createdAt: review.createdAt,
       })),
+    };
+  }
+
+  async createReview(dishId: number, dto: CreateReviewDto) {
+    const dishExists = await this.dishRepo.exist({ where: { id: dishId } });
+    if (!dishExists) {
+      throw new NotFoundException({ error: 'Dish not found' });
+    }
+    const authorName = dto.authorName.trim();
+    const body = dto.body.trim();
+    if (!authorName || !body) {
+      throw new BadRequestException({
+        errors: [
+          ...(!authorName
+            ? [{ type: 'field' as const, path: 'authorName', msg: 'must not be empty' }]
+            : []),
+          ...(!body ? [{ type: 'field' as const, path: 'body', msg: 'must not be empty' }] : []),
+        ],
+      });
+    }
+    const photoUrl =
+      dto.photoUrl != null && String(dto.photoUrl).trim() !== '' ? dto.photoUrl.trim() : null;
+    const review = this.reviewRepo.create({
+      dishId,
+      authorName,
+      body,
+      photoUrl,
+    });
+    const saved = await this.reviewRepo.save(review);
+    return {
+      id: saved.id,
+      dishId: saved.dishId,
+      authorName: saved.authorName,
+      body: saved.body,
+      photoUrl: saved.photoUrl,
+      createdAt: saved.createdAt,
     };
   }
 }

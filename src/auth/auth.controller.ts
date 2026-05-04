@@ -33,7 +33,12 @@ export class AuthController {
 
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/', sameSite: 'lax' });
+    res.clearCookie(ACCESS_TOKEN_COOKIE, {
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    });
     return { ok: true };
   }
 }

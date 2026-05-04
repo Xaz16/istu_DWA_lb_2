@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from '../database/entities/booking.entity';
@@ -62,5 +62,19 @@ export class AdminService {
           dishName: review.dish.name,
         })),
       );
+  }
+
+  async deleteBooking(id: number): Promise<void> {
+    const result = await this.bookingRepo.delete({ id });
+    if (!result.affected) {
+      throw new NotFoundException({ error: 'Booking not found' });
+    }
+  }
+
+  async deleteReview(id: number): Promise<void> {
+    const result = await this.reviewRepo.delete({ id });
+    if (!result.affected) {
+      throw new NotFoundException({ error: 'Review not found' });
+    }
   }
 }

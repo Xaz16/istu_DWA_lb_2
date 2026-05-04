@@ -66,7 +66,12 @@ export class PagesController {
 
   @Get('logout')
   logout(@Res() res: Response) {
-    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/', sameSite: 'lax' });
+    res.clearCookie(ACCESS_TOKEN_COOKIE, {
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    });
     return res.redirect(302, '/login');
   }
 
@@ -88,11 +93,17 @@ export class PagesController {
       ...review,
       createdAtDisplay: formatDateTimeDisplay(review.createdAt),
     }));
+    const accessTokenCookie = req.cookies?.[ACCESS_TOKEN_COOKIE];
+    const accessTokenJson =
+      typeof accessTokenCookie === 'string' && accessTokenCookie.length > 0
+        ? JSON.stringify(accessTokenCookie)
+        : 'null';
     return res.render('admin', {
       title: 'Админ-панель',
       userLogin: user.login,
       bookings,
       reviews,
+      accessTokenJson,
     });
   }
 
