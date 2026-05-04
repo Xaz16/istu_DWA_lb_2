@@ -227,7 +227,7 @@ paths:
   /admin/bookings:
     get:
       summary: Admin list bookings
-      description: Только заголовок Authorization Bearer (cookie не учитывается).
+      
       security:
         - bearerAuth: []
       parameters:
@@ -247,7 +247,7 @@ paths:
   /admin/bookings/{id}:
     delete:
       summary: Admin delete booking
-      description: Только заголовок Authorization Bearer (cookie не учитывается).
+      
       security:
         - bearerAuth: []
       parameters:
@@ -268,7 +268,7 @@ paths:
   /admin/reviews:
     get:
       summary: Admin list reviews
-      description: Только заголовок Authorization Bearer (cookie не учитывается).
+      
       security:
         - bearerAuth: []
       parameters:
@@ -288,7 +288,7 @@ paths:
   /admin/reviews/{id}:
     delete:
       summary: Admin delete review
-      description: Только заголовок Authorization Bearer (cookie не учитывается).
+      
       security:
         - bearerAuth: []
       parameters:
