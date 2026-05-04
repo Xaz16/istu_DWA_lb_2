@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    {{> head}}
+  </head>
+  <body>
+    <div class="shell">
+      <div class="topbar">
+        <span class="brand">{{title}}</span>
+        <nav class="nav">
+          <span class="text-muted">{{userLogin}}</span>
+          <a href="/api-docs" target="_blank" rel="noopener">Swagger</a>
+          <a href="/logout">Выйти</a>
+        </nav>
+      </div>
+
+      <div class="panel">
+        <h2>Бронирования</h2>
+        {{#if bookings.length}}
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Дата</th>
+                <th>Гости</th>
+                <th>Контакт</th>
+                <th>Стол / зал</th>
+                <th>Создано</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each bookings}}
+                <tr>
+                  <td>{{this.id}}</td>
+                  <td>{{this.visitDate}}</td>
+                  <td>{{this.guestCount}}</td>
+                  <td>
+                    {{this.contactName}}<br />
+                    <span class="text-muted">{{this.contactPhone}}</span>
+                    {{#if this.contactEmail}}<br /><span class="text-muted">{{this.contactEmail}}</span>{{/if}}
+                  </td>
+                  <td>{{this.tableCode}} — {{this.hallName}}</td>
+                  <td>{{this.createdAtDisplay}}</td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        {{else}}
+          <p class="empty">Нет бронирований.</p>
+        {{/if}}
+      </div>
+
+      <div class="panel">
+        <h2>Отзывы</h2>
+        {{#if reviews.length}}
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Блюдо</th>
+                <th>Автор</th>
+                <th>Текст</th>
+                <th>Создано</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each reviews}}
+                <tr>
+                  <td>{{this.id}}</td>
+                  <td>{{this.dishName}} <span class="text-muted">(#{{this.dishId}})</span></td>
+                  <td>{{this.authorName}}</td>
+                  <td class="review-body">{{this.body}}</td>
+                  <td>{{this.createdAtDisplay}}</td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        {{else}}
+          <p class="empty">Нет отзывов.</p>
+        {{/if}}
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: istu_dwa_lb_2
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./tmp/postgres_data:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d istu_dwa_lb_2']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: node:22-bookworm-slim
+    command: npm run start:dev
+    working_dir: /app
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/istu_dwa_lb_2
+      PORT: '3000'
+      NODE_ENV: development
+      JWT_SECRET: dev-docker-jwt-secret-change-me
+      CHOKIDAR_USEPOLLING: 'true'
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
